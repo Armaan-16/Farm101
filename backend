@@ -1,0 +1,421 @@
+from flask import Flask, jsonify, request, render_template
+
+app = Flask(__name__)
+
+# --- MOCK DATA STORE (In a real app, this would be a database like PostgreSQL or MongoDB) ---
+MOCK_USERS = {}
+MOCK_WEATHER_DATA = {
+    "Nashik, Maharashtra": {
+        "region": "Nashik, Maharashtra",
+        "date": "16 Oct 2025",
+        "temp_current": "30°C",
+        "temp_min_max": "23°C / 33°C",
+        "rain_forecast": "Low chance (5%)",
+        "humidity": "60%",
+        "wind": "15 km/h (North-Easterly)",
+        "pressure": "1010 hPa",
+        "alert": "NONE",
+        "advisory": "Continue drip irrigation. High temperatures expected in the afternoon. Avoid chemical spraying during peak sun.",
+    },
+    "default": { # Fallback data
+        "region": "Himalayan Foothills, Uttarakhand",
+        "date": "16 Oct 2025",
+        "temp_current": "18°C",
+        "temp_min_max": "10°C / 22°C",
+        "rain_forecast": "Moderate chance (40%)",
+        "humidity": "80%",
+        "wind": "8 km/h (Westerly)",
+        "pressure": "1015 hPa",
+        "alert": "Light Frost Warning Overnight",
+        "advisory": "Protect sensitive crops from frost. Ensure drainage is clear ahead of predicted rainfall.",
+    }
+}
+
+
+# --- API ENDPOINTS (The Backend Logic) ---
+
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    """Handles new user registration."""
+    data = request.json
+    mobile = data.get('number')
+    password = data.get('password')
+    location = data.get('location')
+
+    if not all([mobile, password, location]):
+        return jsonify({"success": False, "message": "Missing required fields."}), 400
+
+    if mobile in MOCK_USERS:
+        return jsonify({"success": False, "message": "Mobile number already registered."}), 409
+
+    # Save user data (mocking a database operation)
+    MOCK_USERS[mobile] = {
+        "password": password, # In a real app, this would be securely hashed!
+        "name": data.get('name'),
+        "location": location,
+        "scale": data.get('scale')
+    }
+    print(f"User signed up: {mobile} in {location}. Total users: {len(MOCK_USERS)}")
+    return jsonify({"success": True, "message": "Registration successful! You can now log in."}), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Handles user login and session creation (mocked)."""
+    data = request.json
+    mobile = data.get('mobile')
+    password = data.get('password')
+
+    user = MOCK_USERS.get(mobile)
+
+    if not user:
+        return jsonify({"success": False, "message": "Mobile number not found."}), 404
+
+    # Basic password check (MOCK: always compares plain text)
+    if user['password'] == password:
+        return jsonify({
+            "success": True,
+            "message": "Login successful!",
+            "user_data": {
+                "name": user['name'],
+                "location": user['location'],
+                "scale": user['scale']
+            }
+        }), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid password."}), 401
+
+@app.route('/api/weather', methods=['GET'])
+def get_weather():
+    """Provides dynamic weather and advisory data based on location query."""
+    location_query = request.args.get('location', 'default')
+
+    # Simple lookup - in a real app, this would query a weather API based on coordinates
+    weather_data = MOCK_WEATHER_DATA.get(location_query, MOCK_WEATHER_DATA['default'])
+
+    return jsonify({"success": True, "weather": weather_data}), 200
+
+
+# --- CONSOLIDATED FRONTEND (Served by Flask) ---
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agri-Weather: Farmer's Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Global Styles and Typography --- */
+        :root {
+            --primary-color: #28a745; /* A vibrant green for main elements */
+            --secondary-color: #007bff; /* Blue for buttons/accents */
+            --background-light: #f8f9fa; /* Very light gray/off-white */
+            --text-dark: #333;
+            --card-background: #ffffff;
+            --alert-color: #dc3545; /* Red for alerts */
+            --border-light: #ddd;
+            --box-shadow-light: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--primary-color);
+            display: flex;
+            justify-content: center; /* Center the main wrapper */
+            padding: 30px;
+        }
+
+        /* --- Main Structure --- */
+        #main-wrapper {
+            width: 100%;
+            max-width: 1400px; /* Constrain for a mobile app look on larger screens */
+            background-color: var(--card-background);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            min-height: 90vh;
+            border-radius: 10px;
+        }
+
+        .container {
+            padding: 40px;
+            max-width: 1200px;
+            margin: 20px auto;
+            min-height: 60vh;
+        }
+
+        /* Content Sections (controlled by JavaScript) */
+        .content-section {
+            display: none; /* All sections are hidden by default, JS shows one */
+            padding: 20px;
+            border-top: 2px solid #ddd;
+        }
+
+        h1 {
+            font-size: 2.7em;
+            color: white; /* H1 is in the green header */
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 1.6em;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+
+        /* --- Header & Navigation --- */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+
+        .header-title-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .app-logo {
+            width: 80px;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        header > p {
+            font-size: 1.3em;
+            margin-top: 1px;
+            color: #e2e6ea;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: center;
+            background-color: #1e7e34; /* Darker green */
+            padding: 10px 0;
+        }
+
+        .nav-button {
+            background-color: #34c759;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 0 10px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.1s;
+            flex: 1;
+            max-width: 300px;
+            font-weight: bold;
+        }
+
+        .nav-button:hover {
+            background-color: #28a745;
+            transform: translateY(-2px);
+        }
+        
+        .nav-button.active {
+            background-color: var(--secondary-color); /* Blue for active */
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
+        /* --- Home Section Image --- */
+        .farmer {
+            display: flex;
+            justify-content: center;
+            background-color: #9bebae;
+            padding: 30px 0;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .farmer-tablet {
+            width: 90%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: var(--box-shadow-light);
+        }
+
+        /* --- Profile Section (Forms and Auth Buttons) --- */
+        .profile-auth-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .auth-button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+            flex-basis: 45%;
+            max-width: 200px;
+            border: 1px solid;
+        }
+
+        #login-btn { background-color: #007bff; color: white; border-color: #007bff; }
+        #login-btn:hover { background-color: #0056b3; }
+        #login-btn.active { background-color: #0056b3; box-shadow: 0 0 5px rgba(0, 86, 179, 0.7); }
+
+        #signup-btn { background-color: #ffc107; color: #333; border-color: #ffc107; }
+        #signup-btn:hover { background-color: #e0a800; }
+        #signup-btn.active { background-color: #e0a800; box-shadow: 0 0 5px rgba(224, 168, 0, 0.7); }
+
+        .auth-form {
+            background-color: #f9f9f9;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            display: none;
+        }
+
+        .auth-form h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .auth-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .auth-form input, .auth-form select {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        .form-submit-btn:hover {
+            background-color: #1e7e34;
+        }
+        
+        /* --- Weather Section --- */
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .weather-card {
+            background-color: #e6f7ff;
+            border-left: 5px solid var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .weather-card h4 {
+            color: var(--secondary-color);
+            margin-top: 0;
+            border-bottom: 1px dashed #007bff;
+            padding-bottom: 5px;
+        }
+
+        .main-info {
+            grid-column: span 2;
+            background-color: #ccffcc !important; /* Light green background */
+            border-left-color: var(--primary-color) !important;
+        }
+
+        .alert-text {
+            color: var(--alert-color);
+            font-weight: bold;
+        }
+
+        /* --- Schemes Section Styles --- */
+        .scheme-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .scheme-item {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background-color: #f0f8f0;
+            transition: box-shadow 0.3s;
+        }
+
+        .scheme-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .scheme-item h3 {
+            color: #1e7e34;
+            margin-top: 0;
+        }
+        
+        /* --- Custom Message/Modal Styling --- */
+        #message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: none; /* Hidden by default */
+            min-width: 300px;
+            text-align: center;
+        }
+        .success { background-color: var(--primary-color); }
+        .error { background-color: var(--alert-color); }
+        
+    </style>
+</head>
+<body>
+
