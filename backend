@@ -532,3 +532,129 @@ HTML_TEMPLATE = """
                         <p><strong>Soil Type:</strong> Black Cotton Soil (Regur)</p>
                         <p><strong>Ideal Crops:</strong> Grapes, Onion, Sugarcane, Wheat.</p>
                     </div>
+                <div class="weather-grid">
+                        
+                        <div class="weather-card">
+                            <h4>🌡️ Temperature</h4>
+                            <p><strong>Current:</strong> <span id="temp-current"></span></p>
+                            <p><strong>Min/Max:</strong> <span id="temp-min-max"></span></p>
+                        </div>
+                        
+                        <div class="weather-card">
+                            <h4>💧 Rain & Humidity</h4>
+                            <p><strong>Rain Forecast (24h):</strong> <span id="rain-forecast"></span></p>
+                            <p><strong>Humidity:</strong> <span id="humidity"></span></p>
+                        </div>
+
+                        <div class="weather-card">
+                            <h4>💨 Wind & Atmospheric</h4>
+                            <p><strong>Wind Speed:</strong> <span id="wind-speed"></span></p>
+                            <p><strong>Pressure:</strong> <span id="pressure"></span></p>
+                        </div>
+                        
+                        <div class="weather-card">
+                            <h4>⚠️ Alerts & Advisories</h4>
+                            <p class="alert-text"><strong>Cyclone/Storm Alert:</strong> <span id="alert-status"></span></p>
+                            <p><strong>Advisory:</strong> <span id="advisory-text"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="schemes" class="content-section">
+                <h2>📜 Government Schemes for Farmers</h2>
+                <p>Access information on central and state government schemes relevant to your farming profile.</p>
+                
+                <ul class="scheme-list">
+                    <li class="scheme-item">
+                        <h3>Pradhan Mantri Fasal Bima Yojana (PMFBY)</h3>
+                        <p><strong>Focus:</strong> Crop Insurance. Provides financial support to farmers suffering crop loss/damage arising out of unforeseen events.</p>
+                        <p><strong>Eligibility:</strong> All farmers, including sharecroppers and tenant farmers, growing notified crops in the notified areas.</p>
+                    </li>
+                    <li class="scheme-item">
+                        <h3>Kisan Credit Card (KCC) Scheme</h3>
+                        <p><strong>Focus:</strong> Credit/Loan. Provides adequate and timely credit support to farmers for their cultivation needs.</p>
+                        <p><strong>Benefit:</strong> Short-term loans up to ₹3 lakhs at a subsidized interest rate.</p>
+                    </li>
+                    <li class="scheme-item">
+                        <h3>Paramparagat Krishi Vikas Yojana (PKVY)</h3>
+                        <p><strong>Focus:</strong> Organic Farming. Promotes organic farming through cluster approach and Participatory Guarantee System (PGS) certification.</p>
+                        <p><strong>Assistance:</strong> Financial assistance for organic input procurement, marketing, and training.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- GLOBAL STATE AND REFERENCES ---
+        let currentUserId = null;
+        let currentUserLocation = null;
+        
+        // --- DOM ELEMENT REFERENCES ---
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const userDisplay = document.getElementById('user-display');
+        const logoutBtn = document.getElementById('logout-btn');
+        const weatherContainer = document.getElementById('weather-data-container');
+        const fetchDemoWeatherBtn = document.getElementById('fetch-demo-weather');
+        const weatherStatusMessage = document.getElementById('weather-status-message');
+
+        // Navigation Buttons
+        const profileNavBtn = document.getElementById('profile-nav');
+        const weatherNavBtn = document.getElementById('weather-nav');
+        const schemesNavBtn = document.getElementById('schemes-nav');
+        const allNavBtns = document.querySelectorAll('.nav-button');
+
+        // Profile Buttons
+        const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        const authButtons = document.querySelectorAll('.profile-auth-container .auth-button');
+
+        // --- CORE FUNCTIONS ---
+        
+        /**
+         * Shows a temporary, colored message box for user feedback.
+         * @param {string} message - The message text.
+         * @param {string} type - 'success' or 'error'.
+         */
+        function showMessage(message, type) {
+            const msgBox = document.getElementById('message-box');
+            msgBox.textContent = message;
+            msgBox.className = type;
+            msgBox.style.display = 'block';
+            setTimeout(() => {
+                msgBox.style.display = 'none';
+            }, 4000);
+        }
+
+        /**
+         * Hides all content sections and shows the selected one, and updates the active navigation button.
+         * @param {string} sectionId - The ID of the content section to show.
+         * @param {HTMLElement} activeNavButton - The navigation button element that was clicked.
+         */
+        function showSection(sectionId, activeNavButton = null) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+
+            allNavBtns.forEach(btn => btn.classList.remove('active'));
+            if (activeNavButton) {
+                activeNavButton.classList.add('active');
+            }
+            
+            if (sectionId === 'profile') {
+                updateProfileUI(); // Check if user is logged in
+            } else if (sectionId === 'weather') {
+                // Attempt to fetch weather data automatically if logged in
+                if (currentUserId) {
+                    fetchWeatherData(currentUserLocation);
+                }
+            }
+        }
