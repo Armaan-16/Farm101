@@ -419,3 +419,116 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
+<div id="main-wrapper"> 
+        
+        <header>
+            <div class="header-title-container">
+                <!-- Using a placeholder image -->
+                <img src="https://placehold.co/80x80/28a745/ffffff?text=🌱AW" alt="Agri-Weather Logo" class="app-logo" onerror="this.onerror=null; this.src='https://placehold.co/80x80/28a745/ffffff?text=🌱AW'">
+                <header>
+                    <h1>🌱 Agri-Weather
+                        <br> 
+                        Farmer's Production Assistant</h1>
+                </header>
+            </div>
+            <p>Your guide to optimal crop planning and government support.</p>
+            
+        </header>
+
+        <div class="navbar">
+            <button class="nav-button" id="profile-nav">👤 Profile</button>
+            <button class="nav-button" id="weather-nav">☀️ Weather & Crop Guidance</button>
+            <button class="nav-button" id="schemes-nav">📜 Govt. Schemes</button>
+        </div>
+
+        <!-- Custom Message Box -->
+        <div id="message-box"></div>
+        
+        <div class="container">
+            <div id="home-default" class="content-section">
+                <h2>Welcome to Agri-Weather!</h2>
+                <p>Please use the buttons above to manage your profile, view critical weather information, or check available government schemes.</p>
+                <p>Our goal is to help you make informed decisions for maximum crop yield and sustainability.</p>
+                <div class="farmer">
+                    <img src="https://placehold.co/500x500/9bebae/ffffff?text=Farmer+with+Tablet" alt="Image of a farmer looking the app through tablet" class="farmer-tablet" onerror="this.onerror=null; this.src='https://placehold.co/500x500/9bebae/ffffff?text=Farmer+with+Tablet'">
+                </div>
+            </div>
+            
+            <div id="profile" class="content-section">
+                <h2>User Profile Access</h2>
+                <div class="profile-auth-container">
+                    <button id="login-btn" class="auth-button">Login</button>
+                    <button id="signup-btn" class="auth-button">Sign Up</button>
+                </div>
+
+                <div id="user-display" style="display: none; padding: 20px; border: 1px solid var(--primary-color); border-radius: 8px; background-color: #eafbea;">
+                    <h3>Welcome Back, <span id="user-name"></span>!</h3>
+                    <p><strong>Location:</strong> <span id="user-location"></span></p>
+                    <p><strong>Scale:</strong> <span id="user-scale"></span></p>
+                    <button id="logout-btn" class="form-submit-btn" style="background-color: var(--alert-color);">Logout</button>
+                </div>
+
+                <form id="login-form" class="auth-form" style="display: none;">
+                    <h3>Login to Your Account</h3>
+                    <label for="login-mobile">Mobile Number:</label>
+                    <input type="tel" id="login-mobile" name="mobile" placeholder="Enter Mobile Number" required>
+                    
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" name="password" placeholder="Enter Password" required>
+
+                    <button type="submit" class="form-submit-btn">LOGIN</button>
+                </form>
+
+                <form id="signup-form" class="auth-form" style="display: none;">
+                    <h3>Create New Account</h3>
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+
+                    <label for="number">Mobile Number:</label>
+                    <input type="tel" id="number" name="number" required>
+                    
+                    <label for="signup-password">Create Password:</label>
+                    <input type="password" id="signup-password" name="password" placeholder="Min 8 characters" required>
+                    
+                    <label for="confirm-password">Confirm Password:</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+                    
+                    <label for="location">State/District Location:</label>
+                    <input type="text" id="location" name="location" placeholder="e.g., Nashik, Maharashtra" required>
+                    
+                    <label for="scale">Scale of Farmer:</label>
+                    <select id="scale" name="scale" required>
+                        <option value="">-- Select Scale --</option>
+                        <option value="Small">Small (below 2 hectares)</option>
+                        <option value="Medium">Medium (2 to 10 hectares)</option>
+                        <option value="Large">Large (above 10 hectares)</option>
+                    </select>
+
+                    <label for="address">Address (Optional):</label>
+                    <input type="text" id="address" name="address">
+
+                    <label for="pincode">Pincode (Optional):</label>
+                    <input type="text" id="pincode" name="pincode" pattern="\d{6}" title="Six digit pincode">
+
+                    <button type="submit" class="form-submit-btn">SIGN UP</button>
+                </form>
+            </div>
+
+            <div id="weather" class="content-section">
+                <h2>☀️ Current Weather & Agricultural Advisory</h2>
+                <div id="weather-status-message" style="margin-bottom: 20px;">
+                    <p class="alert-text">Please log in via the Profile section to automatically fetch weather for your registered location.</p>
+                </div>
+
+                <!-- Hardcoded location for demonstration -->
+                <button id="fetch-demo-weather" class="form-submit-btn" style="max-width: 300px; margin-bottom: 20px; background-color: #34c759;">Fetch Mock Nashik Weather</button>
+                
+                <div id="weather-data-container" style="display: none;">
+                    
+                    <div class="weather-card main-info" id="main-weather-info">
+                        <h4>📍 Region: <span id="weather-region">Loading...</span></h4>
+                        <p><strong>Date:</strong> <span id="weather-date"></span> | <strong>Last Updated:</strong> <span id="weather-last-updated"></span></p>
+                        <hr>
+                        <p><strong>Soil Type:</strong> Black Cotton Soil (Regur)</p>
+                        <p><strong>Ideal Crops:</strong> Grapes, Onion, Sugarcane, Wheat.</p>
+                    </div>
